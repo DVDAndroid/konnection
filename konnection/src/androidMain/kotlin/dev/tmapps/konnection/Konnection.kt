@@ -12,9 +12,11 @@ import androidx.annotation.VisibleForTesting
 import dev.tmapps.konnection.resolvers.IPv6TestIpResolver
 import dev.tmapps.konnection.resolvers.MyExternalIpResolver
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.Inet6Address
@@ -32,8 +34,8 @@ actual class Konnection(
     internal var connectivityManager: ConnectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    private val connectionPublisher = MutableStateFlow(getCurrentNetworkConnection())
-
+    private val scope = MainScope()
+    private val connectionPublisher = MutableStateFlow<NetworkConnection?>(null)
     private var networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             debugLog("NetworkCallback -> onAvailable: network=($network)")
@@ -54,6 +56,10 @@ actual class Konnection(
     }
 
     init {
+        scope.launch {
+            connectionPublisher.value = getCurrentNetworkConnection()
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             connectivityManager.registerDefaultNetworkCallback(networkCallback)
         } else {
@@ -64,7 +70,7 @@ actual class Konnection(
         }
     }
 
-    actual fun isConnected(): Boolean =
+    actual suspend fun isConnected(): Boolean =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             postAndroidMInternetCheck(connectivityManager)
         } else {
@@ -73,7 +79,7 @@ actual class Konnection(
 
     actual fun observeHasConnection(): Flow<Boolean> = connectionPublisher.map { it != null }
 
-    actual fun getCurrentNetworkConnection(): NetworkConnection? =
+    actual suspend fun getCurrentNetworkConnection(): NetworkConnection? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             postAndroidMNetworkConnection(connectivityManager)
         } else {
@@ -153,6 +159,7 @@ actual class Konnection(
             return when (networkConnection) {
                 NetworkConnection.WIFI -> IpInfo.WifiIpInfo(ipv4 = ipv4, ipv6 = ipv6)
                 NetworkConnection.MOBILE -> IpInfo.MobileIpInfo(hostIpv4 = ipv4, externalIpV4 = getExternalIp())
+                else -> null
             }
         } catch (ex: Exception) {
             debugLog("getIpInfo networkConnection = $networkConnection", ex)

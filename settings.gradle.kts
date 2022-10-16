@@ -1,2 +1,2 @@
 include("konnection")
-include("samples:android")
+include("samples:android", "samples:js")

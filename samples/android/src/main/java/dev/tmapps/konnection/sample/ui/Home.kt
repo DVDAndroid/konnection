@@ -103,12 +103,14 @@ private fun Context.getIpInfo1(ipInfo: IpInfo): String? =
     when (ipInfo) {
         is IpInfo.WifiIpInfo -> ipInfo.ipv4?.let { getString(R.string.ip_info_ipv4, it) }
         is IpInfo.MobileIpInfo -> ipInfo.hostIpv4?.let { getString(R.string.ip_info_host_ipv4, it) }
+        else -> null
     }
 
 private fun Context.getIpInfo2(ipInfo: IpInfo): String? =
     when (ipInfo) {
         is IpInfo.WifiIpInfo -> ipInfo.ipv6?.let { getString(R.string.ip_info_ipv6, it) }
         is IpInfo.MobileIpInfo -> ipInfo.externalIpV4?.let { getString(R.string.ip_info_external_ipv4, it) }
+        else -> null
     }
 
 @Preview(name = "loading state")

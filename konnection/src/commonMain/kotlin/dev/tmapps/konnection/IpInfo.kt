@@ -11,4 +11,8 @@ sealed class IpInfo(val connection: NetworkConnection) {
         val hostIpv4: String?,
         val externalIpV4: String?
     ): IpInfo(connection = NetworkConnection.MOBILE)
+
+    data class GenericIpInfo(
+        val externalIp: String?,
+    ): IpInfo(connection = NetworkConnection.UNKNOWN)
 }

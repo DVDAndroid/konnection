@@ -13,5 +13,6 @@ object BuildPlugins {
 object ScriptPlugins {
     const val kmmAndroid = "scripts.kmm_android"
     const val kmmIoS = "scripts.kmm_ios"
+    const val kmmJs = "scripts.kmm_js"
     const val publish = "scripts.publish"
 }

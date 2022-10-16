@@ -24,6 +24,15 @@ kotlin {
         }
     }
 
+    sourceSets {
+        val iosTest by getting {
+            dependencies {
+                implementation(Dependencies.turbine)
+                implementation(Dependencies.mockative)
+            }
+        }
+    }
+
     multiplatformSwiftPackage {
         packageName(moduleFrameworkName)
         swiftToolsVersion("5.3")

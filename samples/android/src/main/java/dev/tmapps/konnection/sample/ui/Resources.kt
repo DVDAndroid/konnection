@@ -13,12 +13,12 @@ val NetworkConnection?.icon: ImageVector
     get() = when (this) {
         NetworkConnection.WIFI -> Icons.Outlined.Wifi
         NetworkConnection.MOBILE -> Icons.Outlined.SignalCellular4Bar
-        null -> Icons.Filled.CloudOff
+        else -> Icons.Filled.CloudOff
     }
 
 val NetworkConnection?.message: Int
     @StringRes get() = when (this) {
         NetworkConnection.WIFI -> R.string.network_connection_wifi
         NetworkConnection.MOBILE -> R.string.network_connection_mobile
-        null -> R.string.network_connection_none
+        else -> R.string.network_connection_none
     }

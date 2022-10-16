@@ -4,12 +4,12 @@ import kotlinx.coroutines.flow.Flow
 
 expect class Konnection {
     /** Returns true if has some Network Connection otherwise false. */
-    fun isConnected(): Boolean
+    suspend fun isConnected(): Boolean
     /** Hot Flow that emits if has Network Connection or not. */
     fun observeHasConnection(): Flow<Boolean>
 
     /** Returns the current Network Connection. */
-    fun getCurrentNetworkConnection(): NetworkConnection?
+    suspend fun getCurrentNetworkConnection(): NetworkConnection?
     /** Hot Flow that emits the current Network Connection. */
     fun observeNetworkConnection(): Flow<NetworkConnection?>
 

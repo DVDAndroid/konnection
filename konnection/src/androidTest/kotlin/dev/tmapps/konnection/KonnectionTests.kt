@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert
 import org.junit.Before
@@ -49,7 +50,7 @@ class KonnectionTests {
         every { networkInfo.type } returns ConnectivityManager.TYPE_WIFI
         every { connectivityManager.activeNetworkInfo } returns networkInfo
 
-        Assert.assertTrue(konnection.isConnected())
+        runTest { Assert.assertTrue(konnection.isConnected()) }
     }
 
     @Test
@@ -64,7 +65,7 @@ class KonnectionTests {
         every { connectivityManager.getNetworkCapabilities(network) } returns capabilities
         every { connectivityManager.activeNetwork } returns network
 
-        Assert.assertTrue(konnection.isConnected())
+        runTest { Assert.assertTrue(konnection.isConnected()) }
     }
 
     @Test @Suppress("DEPRECATION")
@@ -73,7 +74,7 @@ class KonnectionTests {
 
         every { connectivityManager.activeNetworkInfo } returns null
 
-        Assert.assertEquals(null, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(null, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test
@@ -83,7 +84,7 @@ class KonnectionTests {
         every { connectivityManager.getNetworkCapabilities(any()) } returns null
         every { connectivityManager.activeNetwork } returns null
 
-        Assert.assertEquals(null, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(null, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test @Suppress("DEPRECATION")
@@ -95,7 +96,7 @@ class KonnectionTests {
         every { networkInfo.type } returns ConnectivityManager.TYPE_WIFI
         every { connectivityManager.activeNetworkInfo } returns networkInfo
 
-        Assert.assertEquals(NetworkConnection.WIFI, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(NetworkConnection.WIFI, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test
@@ -111,7 +112,7 @@ class KonnectionTests {
         every { connectivityManager.getNetworkCapabilities(network) } returns capabilities
         every { connectivityManager.activeNetwork } returns network
 
-        Assert.assertEquals(NetworkConnection.WIFI, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(NetworkConnection.WIFI, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test @Suppress("DEPRECATION")
@@ -123,7 +124,7 @@ class KonnectionTests {
         every { networkInfo.type } returns ConnectivityManager.TYPE_MOBILE
         every { connectivityManager.activeNetworkInfo } returns networkInfo
 
-        Assert.assertEquals(NetworkConnection.MOBILE, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(NetworkConnection.MOBILE, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test
@@ -139,7 +140,7 @@ class KonnectionTests {
         every { connectivityManager.getNetworkCapabilities(network) } returns capabilities
         every { connectivityManager.activeNetwork } returns network
 
-        Assert.assertEquals(NetworkConnection.MOBILE, konnection.getCurrentNetworkConnection())
+        runTest { Assert.assertEquals(NetworkConnection.MOBILE, konnection.getCurrentNetworkConnection()) }
     }
 
     @Test

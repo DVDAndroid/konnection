@@ -37,8 +37,6 @@ kotlin {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation(Dependencies.kotlinCoroutinesTest)
-                implementation(Dependencies.mockative)
-                implementation(Dependencies.turbine)
             }
         }
     }
@@ -55,5 +53,8 @@ dependencies {
 }
 
 apply(plugin = ScriptPlugins.kmmAndroid)
-apply(plugin = ScriptPlugins.kmmIoS)
+apply(plugin = ScriptPlugins.kmmJs)
+if (isMacOsMachine()) {
+    apply(plugin = ScriptPlugins.kmmIoS)
+}
 apply(plugin = ScriptPlugins.publish)
