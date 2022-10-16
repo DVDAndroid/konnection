@@ -12,13 +12,12 @@ import org.w3c.fetch.RequestMode
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-actual class Konnection(
-  private val pingUrl: String = "https://www.google.com",
-  private val pingInterval: Duration = 5.seconds,
-) : KonnectionCheck {
+class UrlPingKonnectionCheck(
+  private val pingUrl: String,
+  private val pingInterval: Duration,
+) : AbstractKonnectionCheck() {
 
   private val jsScope = MainScope()
-  private val connectionPublisher = MutableStateFlow<NetworkConnection?>(null)
   private val requestTimeout = (pingInterval.inWholeMilliseconds - (pingInterval.inWholeMilliseconds / 10)).toInt()
 
   init {
@@ -45,16 +44,10 @@ actual class Konnection(
       .await()
   }
 
-  /** Hot Flow that emits if has Network Connection or not. */
-  override fun observeHasConnection(): Flow<Boolean> = connectionPublisher.map { it != null }
-
   /** Returns the current Network Connection. */
   override suspend fun getCurrentNetworkConnection(): NetworkConnection? {
     return if (isConnected()) NetworkConnection.UNKNOWN else null
   }
-
-  /** Hot Flow that emits the current Network Connection. */
-  override fun observeNetworkConnection(): Flow<NetworkConnection?> = connectionPublisher
 
   /** Returns the ip info from the current Network Connection. */
   override suspend fun getCurrentIpInfo(): IpInfo? {
@@ -65,3 +58,8 @@ actual class Konnection(
   }
 
 }
+
+actual class Konnection(
+  private val pingUrl: String = "https://www.google.com",
+  private val pingInterval: Duration = 5.seconds,
+) : KonnectionCheck by UrlPingKonnectionCheck(pingUrl, pingInterval)

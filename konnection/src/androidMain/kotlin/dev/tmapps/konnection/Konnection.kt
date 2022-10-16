@@ -22,10 +22,6 @@ import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.NetworkInterface
 
-interface AndroidKonnectionCheck : KonnectionCheck {
-    suspend fun init()
-}
-
 class AndroidDefaultConnectionCheck(
     context: Context,
     private val enableDebugLog: Boolean = false,
@@ -33,12 +29,11 @@ class AndroidDefaultConnectionCheck(
         MyExternalIpResolver(enableDebugLog),
         IPv6TestIpResolver(enableDebugLog)
     )
-) : AndroidKonnectionCheck {
+) : AbstractKonnectionCheck() {
     @VisibleForTesting
     internal var connectivityManager: ConnectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    private val connectionPublisher = MutableStateFlow<NetworkConnection?>(null)
     private var networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             debugLog("NetworkCallback -> onAvailable: network=($network)")
@@ -60,16 +55,20 @@ class AndroidDefaultConnectionCheck(
         }
     }
 
-    override suspend fun init() {
-        connectionPublisher.value = getCurrentNetworkConnection()
+    private val scope = CoroutineScope(Dispatchers.IO)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            connectivityManager.registerDefaultNetworkCallback(networkCallback)
-        } else {
-            val networkRequest = NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .build()
-            connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+    init {
+        scope.launch {
+            connectionPublisher.value = getCurrentNetworkConnection()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.registerDefaultNetworkCallback(networkCallback)
+            } else {
+                val networkRequest = NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+                connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+            }
         }
     }
 
@@ -80,16 +79,12 @@ class AndroidDefaultConnectionCheck(
             preAndroidMInternetCheck(connectivityManager)
         }
 
-    override fun observeHasConnection(): Flow<Boolean> = connectionPublisher.map { it != null }
-
     override suspend fun getCurrentNetworkConnection(): NetworkConnection? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             postAndroidMNetworkConnection(connectivityManager)
         } else {
             preAndroidMNetworkConnection(connectivityManager)
         }
-
-    override fun observeNetworkConnection(): Flow<NetworkConnection?> = connectionPublisher
 
     override suspend fun getCurrentIpInfo(): IpInfo? = getIpInfo(getCurrentNetworkConnection())
 
@@ -183,10 +178,4 @@ class AndroidDefaultConnectionCheck(
     }
 }
 
-actual class Konnection(private val check: AndroidKonnectionCheck) : KonnectionCheck by check {
-    private val scope = CoroutineScope(Dispatchers.IO)
-
-    init {
-        scope.launch { check.init() }
-    }
-}
+actual class Konnection(private val check: KonnectionCheck) : KonnectionCheck by check
