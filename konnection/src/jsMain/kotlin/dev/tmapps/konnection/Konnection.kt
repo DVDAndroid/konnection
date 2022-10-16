@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.seconds
 actual class Konnection(
   private val pingUrl: String = "https://www.google.com",
   private val pingInterval: Duration = 5.seconds,
-) {
+) : KonnectionCheck {
 
   private val jsScope = MainScope()
   private val connectionPublisher = MutableStateFlow<NetworkConnection?>(null)
@@ -31,7 +31,7 @@ actual class Konnection(
   }
 
   /** Returns true if has some Network Connection otherwise false. */
-  actual suspend fun isConnected(): Boolean {
+  override suspend fun isConnected(): Boolean {
     val abortController = AbortController()
     val handle = window.setTimeout({ abortController.abort() }, requestTimeout)
 
@@ -46,18 +46,18 @@ actual class Konnection(
   }
 
   /** Hot Flow that emits if has Network Connection or not. */
-  actual fun observeHasConnection(): Flow<Boolean> = connectionPublisher.map { it != null }
+  override fun observeHasConnection(): Flow<Boolean> = connectionPublisher.map { it != null }
 
   /** Returns the current Network Connection. */
-  actual suspend fun getCurrentNetworkConnection(): NetworkConnection? {
+  override suspend fun getCurrentNetworkConnection(): NetworkConnection? {
     return if (isConnected()) NetworkConnection.UNKNOWN else null
   }
 
   /** Hot Flow that emits the current Network Connection. */
-  actual fun observeNetworkConnection(): Flow<NetworkConnection?> = connectionPublisher
+  override fun observeNetworkConnection(): Flow<NetworkConnection?> = connectionPublisher
 
   /** Returns the ip info from the current Network Connection. */
-  actual suspend fun getCurrentIpInfo(): IpInfo? {
+  override suspend fun getCurrentIpInfo(): IpInfo? {
     if (getCurrentNetworkConnection() == null) return null
 
     val externalIpResolver = MyExternalIpResolver().get()

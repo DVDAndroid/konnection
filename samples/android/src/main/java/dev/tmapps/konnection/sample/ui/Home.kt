@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import dev.tmapps.konnection.AndroidDefaultConnectionCheck
 import dev.tmapps.konnection.IpInfo
 import dev.tmapps.konnection.Konnection
 import dev.tmapps.konnection.NetworkConnection
@@ -51,7 +52,7 @@ fun Home(
     initialIpInfo: IpInfo? = null
 ) {
     val context = LocalContext.current
-    val konnection = Konnection(context, enableDebugLog = BuildConfig.DEBUG)
+    val konnection = Konnection(AndroidDefaultConnectionCheck(context, enableDebugLog = BuildConfig.DEBUG))
     val networkState = konnection.observeNetworkConnection().collectAsState(initialConnection)
 
     val ipInfo = produceState(initialIpInfo, networkState.value) { value = konnection.getCurrentIpInfo() }

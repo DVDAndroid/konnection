@@ -2,7 +2,7 @@ package dev.tmapps.konnection
 
 import kotlinx.coroutines.flow.Flow
 
-expect class Konnection {
+interface KonnectionCheck {
     /** Returns true if has some Network Connection otherwise false. */
     suspend fun isConnected(): Boolean
     /** Hot Flow that emits if has Network Connection or not. */
@@ -16,3 +16,6 @@ expect class Konnection {
     /** Returns the ip info from the current Network Connection. */
     suspend fun getCurrentIpInfo(): IpInfo?
 }
+
+
+expect class Konnection : KonnectionCheck

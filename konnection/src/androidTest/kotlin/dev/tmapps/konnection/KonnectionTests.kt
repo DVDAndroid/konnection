@@ -30,8 +30,10 @@ class KonnectionTests {
 
     private val konnection by lazy {
         Konnection(
-            context = context,
-            ipResolvers = listOf(externalIpResolver)
+            AndroidDefaultConnectionCheck(
+                context = context,
+                ipResolvers = listOf(externalIpResolver)
+            )
         )
     }
 
