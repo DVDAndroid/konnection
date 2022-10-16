@@ -171,10 +171,13 @@ class KonnectionTests {
         mockkStatic(NetworkInterface::class)
         every { NetworkInterface.getNetworkInterfaces() } returns networkInterfaces.toEnumeration()
 
-        Assert.assertEquals(IpInfo.WifiIpInfo(ipv4 = ipv4, ipv6 = ipv6), konnection.getCurrentIpInfo())
+        val externalIpV4 = "192.192.192.192"
+        coEvery { externalIpResolver.get() } returns externalIpV4
+
+        Assert.assertEquals(IpInfo.WifiIpInfo(ipv4 = ipv4, ipv6 = ipv6, externalIp = externalIpV4), konnection.getCurrentIpInfo())
     }
 
-    @Test @Suppress("DEPRECATION")
+    @Test
     fun `getCurrentIpInfo() should returns MobileIpInfo when the current connection type is Mobile`() = runTest {
         val network = mockk<Network>()
         val capabilities = mockk<NetworkCapabilities>()

@@ -1,18 +1,19 @@
 package dev.tmapps.konnection
 
 /** The ip info data */
-sealed class IpInfo(val connection: NetworkConnection) {
+sealed interface IpInfo {
     data class WifiIpInfo(
         val ipv4: String?,
-        val ipv6: String?
-    ): IpInfo(connection = NetworkConnection.WIFI)
+        val ipv6: String?,
+        val externalIp: String?,
+    ): IpInfo
 
     data class MobileIpInfo(
         val hostIpv4: String?,
         val externalIpV4: String?
-    ): IpInfo(connection = NetworkConnection.MOBILE)
+    ): IpInfo
 
     data class GenericIpInfo(
         val externalIp: String?,
-    ): IpInfo(connection = NetworkConnection.UNKNOWN)
+    ): IpInfo
 }
