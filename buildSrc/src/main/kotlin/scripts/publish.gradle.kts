@@ -9,6 +9,7 @@ import organizationUrl
 import scm
 import summary
 import url
+import isCi
 
 plugins {
     id("maven-publish")
@@ -31,33 +32,33 @@ val libJavadocJar by tasks.registering(Jar::class) {
 publishing {
     publications {
         withType<MavenPublication>().all {
-            pom {
-                withXml {
-                    asNode().apply {
-                        appendNode("name", project.name)
-                        appendNode("description", project.summary)
-                        appendNode("url", project.url)
-                    }
-                }
-                licenses {
-                    license {
-                        name.set(project.license)
-                        url.set(project.licenseUrl)
-                        distribution.set("repo")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set(project.developerId)
-                        name.set(project.developerName)
-                        organization.set(project.organization)
-                        organizationUrl.set(project.organizationUrl)
-                    }
-                }
-                scm {
-                    url.set(project.scm)
-                }
-            }
+//            pom {
+//                withXml {
+//                    asNode().apply {
+//                        appendNode("name", project.name)
+//                        appendNode("description", project.summary)
+//                        appendNode("url", project.url)
+//                    }
+//                }
+//                licenses {
+//                    license {
+//                        name.set(project.license)
+//                        url.set(project.licenseUrl)
+//                        distribution.set("repo")
+//                    }
+//                }
+//                developers {
+//                    developer {
+//                        id.set(project.developerId)
+//                        name.set(project.developerName)
+//                        organization.set(project.organization)
+//                        organizationUrl.set(project.organizationUrl)
+//                    }
+//                }
+//                scm {
+//                    url.set(project.scm)
+//                }
+//            }
 
             if (name == "kotlinMultiplatform") {
                 // artifact(libSourcesJar.get()) { archiveClassifier.set("sources") }
@@ -66,11 +67,21 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                username = sonatypeUser
-                password = sonatypePassword
+//        maven {
+//            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+//            credentials {
+//                username = sonatypeUser
+//                password = sonatypePassword
+//            }
+//        }
+        if (isCi) {
+            maven {
+                name = "GithubPackages"
+                url = uri("https://maven.pkg.github.com/dvdandroid/konnection")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
             }
         }
     }
