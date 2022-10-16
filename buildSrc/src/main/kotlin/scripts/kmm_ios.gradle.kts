@@ -1,13 +1,14 @@
 package scripts
 
+import com.chromaticnoise.multiplatformswiftpackage.SwiftPackageExtension
 import isMacOsMachine
 
 plugins {
     kotlin("multiplatform") apply false
-    id("com.chromaticnoise.multiplatform-swiftpackage")
 }
-
 if (isMacOsMachine()) {
+    apply(plugin = "com.chromaticnoise.multiplatform-swiftpackage")
+}
 
 val moduleFrameworkName = project.name.capitalize()
 
@@ -33,7 +34,7 @@ kotlin {
         }
     }
 
-    multiplatformSwiftPackage {
+    extensions.findByType<SwiftPackageExtension>()?.apply {
         packageName(moduleFrameworkName)
         swiftToolsVersion("5.3")
         targetPlatforms {
@@ -52,6 +53,4 @@ afterEvaluate {
             compilation.compileDependencyFiles.filterNot { it.absolutePath.endsWith("klib/common/stdlib") }
         )
     }
-}
-
 }

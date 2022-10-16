@@ -19,3 +19,7 @@ allprojects {
         mavenCentral()
     }
 }
+
+plugins {
+    id("com.louiscad.complete-kotlin") version "1.1.0"
+}

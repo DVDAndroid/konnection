@@ -54,7 +54,5 @@ dependencies {
 
 apply(plugin = ScriptPlugins.kmmAndroid)
 apply(plugin = ScriptPlugins.kmmJs)
-if (isMacOsMachine()) {
-    apply(plugin = ScriptPlugins.kmmIoS)
-}
+apply(plugin = ScriptPlugins.kmmIoS)
 apply(plugin = ScriptPlugins.publish)

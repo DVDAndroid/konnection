@@ -34,6 +34,8 @@ fun isMacOsMachine(): Boolean {
     return osName.fullTrim().contains("macos")
 }
 
+val isCi get() = System.getenv("CI")?.toBoolean() == true
+
 /**
  * Check if the project run on Linux or Mac operating system
  *
