@@ -14,9 +14,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,13 +24,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
-import dev.tmapps.konnection.AndroidDefaultConnectionCheck
-import dev.tmapps.konnection.IpInfo
-import dev.tmapps.konnection.Konnection
-import dev.tmapps.konnection.NetworkConnection
+import dev.tmapps.konnection.*
 import dev.tmapps.konnection.sample.BuildConfig
 import dev.tmapps.konnection.sample.R
 import dev.tmapps.konnection.sample.ui.theme.SampleTheme
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LoadingState(overlayColor: Color = Color.Transparent) {
@@ -52,7 +48,15 @@ fun Home(
     initialIpInfo: IpInfo? = null
 ) {
     val context = LocalContext.current
-    val konnection = Konnection(AndroidDefaultConnectionCheck(context, enableDebugLog = BuildConfig.DEBUG))
+    val coroutineScope = rememberCoroutineScope()
+    val konnection = remember {
+        Konnection(DefaultConnectionCheck(context, enableDebugLog = BuildConfig.DEBUG))
+    }
+    val googleKonnection = remember {
+        Konnection(UrlPingConnectionCheck("https://google.com", 5.seconds, coroutineScope))
+    }
+
+    val googleConnectionState = googleKonnection.observeHasConnection().collectAsState(false)
     val networkState = konnection.observeNetworkConnection().collectAsState(initialConnection)
 
     val ipInfo = produceState(initialIpInfo, networkState.value) { value = konnection.getCurrentIpInfo() }
@@ -93,6 +97,14 @@ fun Home(
 
             Text(
                 text = ipInfo.value?.let { context.getIpInfo2(it) } ?: "",
+                style = MaterialTheme.typography.subtitle1,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Connection to Google: " + (if (googleConnectionState.value) "OK" else "FAILED"),
                 style = MaterialTheme.typography.subtitle1,
                 textAlign = TextAlign.Center
             )

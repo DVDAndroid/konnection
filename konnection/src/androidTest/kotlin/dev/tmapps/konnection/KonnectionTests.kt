@@ -10,7 +10,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert
 import org.junit.Before
@@ -30,7 +29,7 @@ class KonnectionTests {
 
     private val konnection by lazy {
         Konnection(
-            AndroidDefaultConnectionCheck(
+            DefaultConnectionCheck(
                 context = context,
                 ipResolvers = listOf(externalIpResolver)
             )

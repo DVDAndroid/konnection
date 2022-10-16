@@ -11,18 +11,11 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import dev.tmapps.konnection.resolvers.IPv6TestIpResolver
 import dev.tmapps.konnection.resolvers.MyExternalIpResolver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.net.Inet4Address
-import java.net.Inet6Address
-import java.net.NetworkInterface
+import kotlinx.coroutines.*
+import java.net.*
+import kotlin.time.Duration
 
-class AndroidDefaultConnectionCheck(
+class DefaultConnectionCheck(
     context: Context,
     private val enableDebugLog: Boolean = false,
     private val ipResolvers: List<IpResolver> = listOf(
@@ -176,6 +169,25 @@ class AndroidDefaultConnectionCheck(
             Log.d("Konnection", message, error)
         }
     }
+}
+
+class UrlPingConnectionCheck(
+    private val pingUrl: String,
+    pingInterval: Duration,
+    scope: CoroutineScope,
+) : AbstractUrlPingKonnectionCheck(pingInterval, scope) {
+
+    override suspend fun isConnected(): Boolean = try {
+        val url = URL(pingUrl)
+        val urlConnection = url.openConnection() as HttpURLConnection
+        urlConnection.connectTimeout = requestTimeout
+        urlConnection.readTimeout = 100
+        urlConnection.connect()
+        true
+    } catch (e: Exception) {
+        false
+    }
+
 }
 
 actual class Konnection(private val check: KonnectionCheck) : KonnectionCheck by check

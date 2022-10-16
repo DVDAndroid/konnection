@@ -1,11 +1,8 @@
 package dev.tmapps.konnection
 
-import dev.tmapps.konnection.resolvers.MyExternalIpResolver
 import kotlinx.browser.window
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
 import org.w3c.fetch.NO_CORS
 import org.w3c.fetch.RequestInit
 import org.w3c.fetch.RequestMode
@@ -14,20 +11,8 @@ import kotlin.time.Duration.Companion.seconds
 
 class UrlPingKonnectionCheck(
   private val pingUrl: String,
-  private val pingInterval: Duration,
-) : AbstractKonnectionCheck() {
-
-  private val jsScope = MainScope()
-  private val requestTimeout = (pingInterval.inWholeMilliseconds - (pingInterval.inWholeMilliseconds / 10)).toInt()
-
-  init {
-    jsScope.launch(Dispatchers.Default) {
-      while (true) {
-        connectionPublisher.value = if (isConnected()) NetworkConnection.UNKNOWN else null
-        delay(pingInterval)
-      }
-    }
-  }
+  pingInterval: Duration,
+) : AbstractUrlPingKonnectionCheck(pingInterval, MainScope()) {
 
   /** Returns true if has some Network Connection otherwise false. */
   override suspend fun isConnected(): Boolean {
@@ -42,19 +27,6 @@ class UrlPingKonnectionCheck(
       .catch { return@catch false }
       .finally { window.clearTimeout(handle) }
       .await()
-  }
-
-  /** Returns the current Network Connection. */
-  override suspend fun getCurrentNetworkConnection(): NetworkConnection? {
-    return if (isConnected()) NetworkConnection.UNKNOWN else null
-  }
-
-  /** Returns the ip info from the current Network Connection. */
-  override suspend fun getCurrentIpInfo(): IpInfo? {
-    if (getCurrentNetworkConnection() == null) return null
-
-    val externalIpResolver = MyExternalIpResolver().get()
-    return IpInfo.GenericIpInfo(externalIpResolver)
   }
 
 }
