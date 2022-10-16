@@ -2,69 +2,37 @@ package dev.tmapps.konnection
 
 import dev.tmapps.konnection.resolvers.IPv6TestIpResolver
 import dev.tmapps.konnection.resolvers.MyExternalIpResolver
-import dev.tmapps.konnection.utils.IfaddrsInteractor
-import dev.tmapps.konnection.utils.IfaddrsInteractorImpl
-import dev.tmapps.konnection.utils.ReachabilityInteractor
-import dev.tmapps.konnection.utils.ReachabilityInteractorImpl
-import dev.tmapps.konnection.utils.TriggerEvent
-import kotlinx.cinterop.COpaquePointer
-import kotlinx.cinterop.NativePointed
-import kotlinx.cinterop.StableRef
-import kotlinx.cinterop.alignOf
-import kotlinx.cinterop.convert
-import kotlinx.cinterop.free
-import kotlinx.cinterop.nativeHeap
+import dev.tmapps.konnection.utils.*
+import kotlinx.cinterop.*
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
-import kotlinx.cinterop.sizeOf
-import kotlinx.cinterop.staticCFunction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import platform.Foundation.NSLog
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
-import platform.SystemConfiguration.SCNetworkReachabilityCallBack
-import platform.SystemConfiguration.SCNetworkReachabilityContext
-import platform.SystemConfiguration.SCNetworkReachabilityCreateWithAddress
-import platform.SystemConfiguration.SCNetworkReachabilityFlags
-import platform.SystemConfiguration.SCNetworkReachabilityRef
-import platform.SystemConfiguration.SCNetworkReachabilitySetCallback
-import platform.SystemConfiguration.SCNetworkReachabilitySetDispatchQueue
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsConnectionAutomatic
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsConnectionOnDemand
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsConnectionOnTraffic
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsConnectionRequired
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsInterventionRequired
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsIsDirect
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsIsLocalAddress
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsIsWWAN
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsReachable
-import platform.SystemConfiguration.kSCNetworkReachabilityFlagsTransientConnection
+import platform.SystemConfiguration.*
 import platform.darwin.NSObjectProtocol
 import platform.darwin.dispatch_queue_attr_make_with_qos_class
 import platform.darwin.dispatch_queue_create
 import platform.darwin.dispatch_queue_t
-import platform.posix.AF_INET
-import platform.posix.AF_INET6
-import platform.posix.QOS_CLASS_DEFAULT
-import platform.posix.sockaddr
-import platform.posix.sockaddr_in
+import platform.posix.*
 
-actual class Konnection(
+class DefaultConnectionCheck(
     private val enableDebugLog: Boolean = false,
     private val ipResolvers: List<IpResolver> = listOf(
         MyExternalIpResolver(enableDebugLog),
         IPv6TestIpResolver(enableDebugLog)
-    )
-) {
+    ),
+) : KonnectionCheck {
     private val zeroAddress: NativePointed
     private val reachabilityRef: SCNetworkReachabilityRef
     private val reachabilitySerialQueue: dispatch_queue_t
     private val context: SCNetworkReachabilityContext
 
     private val notificationObserver: NSObjectProtocol
-    private val selfPtr: StableRef<Konnection>
+    private val selfPtr: StableRef<KonnectionCheck>
 
     private val reachabilityBroadcaster = MutableStateFlow(TriggerEvent)
 
@@ -106,7 +74,9 @@ actual class Konnection(
 
         val callback: SCNetworkReachabilityCallBack = staticCFunction { _: SCNetworkReachabilityRef?, _: SCNetworkReachabilityFlags, info: COpaquePointer? ->
             // this block runs on "network_helper" thread, created few lines above
-            if (info == null) { return@staticCFunction }
+            if (info == null) {
+                return@staticCFunction
+            }
 
             // debugLog("SCNetworkReachabilityCallBack fired!")
             // reachabilityBroadcaster.value = TriggerEvent -> not working: EXC_BAD_ACCESS!
@@ -128,16 +98,16 @@ actual class Konnection(
         }
     }
 
-    actual fun isConnected(): Boolean {
+    override suspend fun isConnected(): Boolean {
         val flags = getReachabilityFlags()
         val isReachable = flags.contains(kSCNetworkReachabilityFlagsReachable)
         val needsConnection = flags.contains(kSCNetworkReachabilityFlagsConnectionRequired)
         return isReachable && !needsConnection
     }
 
-    actual fun observeHasConnection(): Flow<Boolean> = observeNetworkConnection().map { it != null }
+    override fun observeHasConnection(): Flow<Boolean> = observeNetworkConnection().map { it != null }
 
-    actual fun getCurrentNetworkConnection(): NetworkConnection? {
+    override suspend fun getCurrentNetworkConnection(): NetworkConnection? {
         val flags = getReachabilityFlags()
         val isReachable = flags.contains(kSCNetworkReachabilityFlagsReachable)
         val needsConnection = flags.contains(kSCNetworkReachabilityFlagsConnectionRequired)
@@ -150,10 +120,10 @@ actual class Konnection(
         }
     }
 
-    actual fun observeNetworkConnection(): Flow<NetworkConnection?> =
+    override fun observeNetworkConnection(): Flow<NetworkConnection?> =
         reachabilityBroadcaster.map { getCurrentNetworkConnection() }
 
-    actual suspend fun getCurrentIpInfo(): IpInfo? {
+    override suspend fun getCurrentIpInfo(): IpInfo? {
         val networkConnection = getCurrentNetworkConnection() ?: return null
 
         val networkInterface = networkConnection.networkInterface
@@ -161,8 +131,9 @@ actual class Konnection(
         val ipv6 = ifaddrsInteractor.get(networkInterface, AF_INET6)
 
         return when (networkConnection) {
-            NetworkConnection.WIFI -> IpInfo.WifiIpInfo(ipv4 = ipv4, ipv6 = ipv6)
+            NetworkConnection.WIFI -> IpInfo.WifiIpInfo(ipv4 = ipv4, ipv6 = ipv6, externalIp = getExternalIp())
             NetworkConnection.MOBILE -> IpInfo.MobileIpInfo(hostIpv4 = ipv4, externalIpV4 = getExternalIp())
+            else -> null
         }
     }
 
@@ -191,8 +162,7 @@ actual class Konnection(
             kSCNetworkReachabilityFlagsConnectionAutomatic
         ).filter {
             (flags and it) > 0u
-        }
-        .toTypedArray()
+        }.toTypedArray()
         debugLog("SCNetworkReachabilityFlags: ${result.contentDeepToString()}")
         return result
     }
@@ -201,6 +171,7 @@ actual class Konnection(
         get() = when (this) {
             NetworkConnection.WIFI -> "en0"
             NetworkConnection.MOBILE -> "pdp_ip0"
+            else -> "unknown"
         }
 
     private suspend fun getExternalIp(): String? =
@@ -213,3 +184,5 @@ actual class Konnection(
         }
     }
 }
+
+actual class Konnection(private val check: KonnectionCheck) : KonnectionCheck by check
